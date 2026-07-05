@@ -1,0 +1,48 @@
+from dataclasses import dataclass
+import struct
+from typing import Tuple
+
+
+def _pack_string(value: str) -> bytes:
+    encoded = value.encode("utf-8")
+    return struct.pack("!H", len(encoded)) + encoded
+
+
+def _unpack_string(data: bytes, offset: int) -> Tuple[str, int]:
+    length = struct.unpack_from("!H", data, offset)[0]
+    offset += 2
+    value = data[offset:offset + length].decode("utf-8")
+    return value, offset + length
+
+{% for type in types %}
+@dataclass
+class {{ type.name }}:
+{% for field in type.fields %}
+    {{ field.name }}: {{ 'str' if field.type == 'string' else 'int' if field.type in ['uint8', 'uint16', 'int32'] else 'float' }}
+{% endfor %}
+
+    def to_bytes(self) -> bytes:
+        chunks = []
+{% for field in type.fields %}
+{% if field.type == 'string' %}
+        chunks.append(_pack_string(self.{{ field.name }}))
+{% else %}
+        chunks.append(struct.pack("!{{ type_map[field.type] }}", self.{{ field.name }}))
+{% endif %}
+{% endfor %}
+        return b"".join(chunks)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "{{ type.name }}":
+        offset = 0
+{% for field in type.fields %}
+{% if field.type == 'string' %}
+        {{ field.name }}, offset = _unpack_string(data, offset)
+{% else %}
+        {{ field.name }} = struct.unpack_from("!{{ type_map[field.type] }}", data, offset)[0]
+        offset += struct.calcsize("!{{ type_map[field.type] }}")
+{% endif %}
+{% endfor %}
+        return cls({% for field in type.fields %}{{ field.name }}={{ field.name }}{% if not loop.last %}, {% endif %}{% endfor %})
+
+{% endfor %}

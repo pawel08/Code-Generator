@@ -1,0 +1,21 @@
+{
+  "types": [
+    {
+      "name": "SensorData",
+      "fields": [
+        { "name": "sensor_id", "type": "uint16" },
+        { "name": "temperature", "type": "float" },
+        { "name": "humidity", "type": "float" }
+      ]
+    },
+    {
+      "name": "Command",
+      "fields": [
+        { "name": "command_id", "type": "uint8" },
+        { "name": "value", "type": "int32" },
+        { "name": "description", "type": "string" },
+        { "name": "note", "type": "string" }
+      ]
+    }
+  ]
+}
